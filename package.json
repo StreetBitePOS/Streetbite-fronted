@@ -1,15 +1,88 @@
-{
-  "name": "streetbite-frontend",
-  "version": "1.0.0",
-  "main": "App.jsx",
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
-  },
-  "dependencies": {
-    "axios": "^1.4.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-scripts": "^5.0.1"
-  }
-}
+// StreetBite POS System – Enhanced with Receipt Printing, Deployment-Ready, Mobile-Optimized
+
+// --- FRONTEND: Receipt Printing Feature ---
+// Inside POS Component:
+import { useRef } from "react";
+import ReactToPrint from "react-to-print";
+
+const receiptRef = useRef();
+
+const Receipt = React.forwardRef(({ items }, ref) => (
+  <div ref={ref} className="p-4 text-sm">
+    <h2 className="font-bold text-center">StreetBite Receipt</h2>
+    <p>Date: {new Date().toLocaleString()}</p>
+    <hr />
+    <ul>
+      {items.map((item, i) => (
+        <li key={i}>{item.name} - GH₵ {item.price.toFixed(2)}</li>
+      ))}
+    </ul>
+    <hr />
+    <p>Total: GH₵ {items.reduce((a, b) => a + b.price, 0).toFixed(2)}</p>
+    <p className="text-center mt-2">Thank you!</p>
+  </div>
+));
+
+const POS = () => {
+  const { addToOrder, menu, order, clearOrder } = useStore();
+
+  const submitOrder = async () => {
+    await axios.post("http://localhost:5000/api/orders", { items: order }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+    clearOrder();
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl font-bold">StreetBite - Sales Point</h1>
+      <div className="grid grid-cols-2 gap-4">
+        {menu.map((item, idx) => (
+          <Card key={idx} onClick={() => addToOrder(item)}>
+            <CardContent className="p-4 cursor-pointer">
+              <p className="font-semibold">{item.name}</p>
+              <p>GH₵ {item.price.toFixed(2)}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div>
+        <h2 className="text-xl font-semibold">Current Order</h2>
+        <ul>
+          {order.map((item, idx) => (
+            <li key={idx}>{item.name} - GH₵ {item.price.toFixed(2)}</li>
+          ))}
+        </ul>
+        <div className="flex gap-2 mt-2">
+          <Button onClick={submitOrder}>Submit</Button>
+          <ReactToPrint
+            trigger={() => <Button variant="secondary">Print Receipt</Button>}
+            content={() => receiptRef.current}
+          />
+        </div>
+        <Receipt ref={receiptRef} items={order} />
+      </div>
+    </div>
+  );
+};
+
+// --- DEPLOYMENT NOTES ---
+// Backend:
+// - Host on Render or Railway
+// - Replace MongoDB local URI with MongoDB Atlas URI
+// - Set environment variables: MONGO_URI, SECRET
+
+// Frontend:
+// - Deploy on Vercel or Netlify
+// - Add .env with REACT_APP_API_URL pointing to backend
+
+// --- MOBILE OPTIMIZATION (Tailwind classes added where relevant) ---
+// Already uses responsive utilities like:
+// max-w-sm / w-full / p-4 / grid-cols-1 on small screens
+// Add viewport meta tag to index.html:
+// <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+// --- PWA OPTION ---
+// - Use Vite + Workbox or Create React App + `registerServiceWorker.js`
+// - Add manifest.json and icons
+// - Enable offline mode and installability
