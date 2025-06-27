@@ -1,0 +1,1 @@
+// React frontend entry point for POS with login and role-based interface
